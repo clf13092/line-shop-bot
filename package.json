@@ -1,0 +1,10 @@
+{
+  "name": "mcp-bundle",
+  "private": true,
+  "dependencies": {
+    "@modelcontextprotocol/server-google-maps": "latest"
+  },
+  "scripts": {
+    "mcp:maps": "node ./node_modules/@modelcontextprotocol/server-google-maps/dist/index.js"
+  }
+}
