@@ -191,23 +191,47 @@ def lambda_handler(event, context):
 
             reply_token = ev.get("replyToken")
             received_text = (msg.get("text", "") or "").strip()
+            source = ev.get("source", {}) or {}
+            source_type = source.get("type")
             print(f"[DEBUG] replyToken: {reply_token}")
             print(f"[DEBUG] receivedText: {received_text}")
+            print(f"[DEBUG] sourceType: {source_type}")
 
-            TRIGGER = "@お店"
-            if not received_text.startswith(TRIGGER):
-                print("[DEBUG] trigger not matched, ignoring")
-                continue
-
-            # @お店 の後ろだけをクエリにする
-            query = received_text[len(TRIGGER):].strip()
+            # トリガー判定: 個人チャットは全て反応、グループ/ルームは@お店で反応
+            TRIGGERS = ["@お店", "＠お店"]  # 半角・全角両対応
+            
+            if source_type == "user":
+                # 個人チャット: 全てのメッセージに反応
+                query = received_text
+            else:
+                # グループ/ルーム: @お店 または ＠お店 で始まる場合のみ反応
+                matched_trigger = None
+                for trigger in TRIGGERS:
+                    if received_text.startswith(trigger):
+                        matched_trigger = trigger
+                        break
+                
+                if not matched_trigger:
+                    print("[DEBUG] trigger not matched in group/room, ignoring")
+                    continue
+                
+                # トリガー文字列の後ろをクエリにする
+                query = received_text[len(matched_trigger):].strip()
+            
             if not query:
                 if reply_token:
-                    send_line_reply(
-                        reply_token,
-                        "使い方：@お店 の後に条件を書いてね。\n例）@お店 上野で静かなカフェ\n例）@お店 渋谷でデート向き居酒屋",
-                        CHANNEL_ACCESS_TOKEN
-                    )
+                    if source_type == "user":
+                        send_line_reply(
+                            reply_token,
+                            "条件を教えてください。\n例）上野で静かなカフェ\n例）渋谷でデート向き居酒屋",
+                            CHANNEL_ACCESS_TOKEN
+                        )
+                    else:
+                        send_line_reply(
+                            reply_token,
+                            "使い方：@お店 の後に条件を書いてね。\n例）@お店 上野で静かなカフェ\n例）@お店 渋谷でデート向き居酒屋",
+                            CHANNEL_ACCESS_TOKEN
+                        )
                 continue
 
             # ① まず即レス（reply）: 「反応してる」ことを見せる
