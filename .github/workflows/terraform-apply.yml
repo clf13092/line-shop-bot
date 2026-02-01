@@ -1,0 +1,70 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+env:
+  AWS_REGION: ap-northeast-1
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get secrets from Parameter Store
+        id: secrets
+        run: |
+          GOOGLE_MAPS_API_KEY=$(aws ssm get-parameter --name "/line-shop-bot/${{ inputs.environment }}/GOOGLE_MAPS_API_KEY" --with-decryption --query 'Parameter.Value' --output text)
+          CHANNEL_ACCESS_TOKEN=$(aws ssm get-parameter --name "/line-shop-bot/${{ inputs.environment }}/CHANNEL_ACCESS_TOKEN" --with-decryption --query 'Parameter.Value' --output text)
+          echo "::add-mask::$GOOGLE_MAPS_API_KEY"
+          echo "::add-mask::$CHANNEL_ACCESS_TOKEN"
+          echo "google_maps_api_key=$GOOGLE_MAPS_API_KEY" >> $GITHUB_OUTPUT
+          echo "channel_access_token=$CHANNEL_ACCESS_TOKEN" >> $GITHUB_OUTPUT
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: terraform
+        env:
+          TF_VAR_google_maps_api_key: ${{ steps.secrets.outputs.google_maps_api_key }}
+          TF_VAR_channel_access_token: ${{ steps.secrets.outputs.channel_access_token }}
+        run: terraform plan -var-file=environments/${{ inputs.environment }}.tfvars -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: terraform
+        env:
+          TF_VAR_google_maps_api_key: ${{ steps.secrets.outputs.google_maps_api_key }}
+          TF_VAR_channel_access_token: ${{ steps.secrets.outputs.channel_access_token }}
+        run: terraform apply -auto-approve tfplan
+
+      - name: Deploy summary
+        run: |
+          echo "## Terraform Apply Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY

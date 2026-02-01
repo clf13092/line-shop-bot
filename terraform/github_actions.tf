@@ -130,9 +130,126 @@ resource "aws_iam_role_policy" "github_actions_lambda" {
     Statement = [{
       Effect = "Allow"
       Action = [
-        "lambda:UpdateFunctionCode"
+        "lambda:UpdateFunctionCode",
+        "lambda:GetFunction"
       ]
       Resource = aws_lambda_function.line_bot.arn
+    }]
+  })
+}
+
+# -----------------------------------------------------------------------------
+# SSM Parameter Store読み取り権限（Terraform用）
+# -----------------------------------------------------------------------------
+
+resource "aws_iam_role_policy" "github_actions_ssm" {
+  count = var.environment == "dev" ? 1 : 0
+
+  name = "${var.project_name}-github-actions-ssm-policy"
+  role = aws_iam_role.github_actions[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "ssm:GetParameter",
+        "ssm:GetParameters"
+      ]
+      Resource = "arn:aws:ssm:${local.region}:${local.account_id}:parameter/${var.project_name}/*"
+    }]
+  })
+}
+
+# -----------------------------------------------------------------------------
+# Terraform実行権限
+# -----------------------------------------------------------------------------
+
+resource "aws_iam_role_policy" "github_actions_terraform" {
+  count = var.environment == "dev" ? 1 : 0
+
+  name = "${var.project_name}-github-actions-terraform-policy"
+  role = aws_iam_role.github_actions[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListRolePolicies",
+          "iam:ListAttachedRolePolicies",
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:PutRolePolicy",
+          "iam:DeleteRolePolicy",
+          "iam:AttachRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:PassRole",
+          "iam:TagRole",
+          "iam:GetOpenIDConnectProvider"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:*"
+        ]
+        Resource = "arn:aws:lambda:${local.region}:${local.account_id}:function:${var.project_name}-*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ecr:*"
+        ]
+        Resource = "arn:aws:ecr:${local.region}:${local.account_id}:repository/${var.project_name}-*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:*"
+        ]
+        Resource = "arn:aws:ssm:${local.region}:${local.account_id}:parameter/${var.project_name}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "apigateway:*"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:*"
+        ]
+        Resource = "arn:aws:logs:${local.region}:${local.account_id}:log-group:/aws/lambda/${var.project_name}-*"
+      }
+    ]
+  })
+}
+
+# -----------------------------------------------------------------------------
+# AgentCore Runtime デプロイ権限
+# -----------------------------------------------------------------------------
+
+resource "aws_iam_role_policy" "github_actions_agentcore" {
+  count = var.environment == "dev" ? 1 : 0
+
+  name = "${var.project_name}-github-actions-agentcore-policy"
+  role = aws_iam_role.github_actions[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "bedrock-agentcore:*"
+      ]
+      Resource = "*"
     }]
   })
 }

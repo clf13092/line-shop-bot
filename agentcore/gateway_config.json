@@ -1,0 +1,16 @@
+{
+  "gateway_id": "lineshopbot-gateway-7muytof3dt",
+  "gateway_url": "https://lineshopbot-gateway-7muytof3dt.gateway.bedrock-agentcore.ap-northeast-1.amazonaws.com/mcp",
+  "region": "ap-northeast-1",
+  "cognito": {
+    "user_pool_id": "ap-northeast-1_HvOohBGUD",
+    "client_id": "2886as738t54dap6r7qg4qr537",
+    "domain": "agentcore-e2e69553"
+  },
+  "targets": {
+    "GoogleMapsPlaces": {
+      "target_id": "OIY2E3CGWI",
+      "status": "READY"
+    }
+  }
+}

@@ -32,3 +32,4 @@ node_modules/
 # Secrets (never commit)
 *.pem
 *.key
+agentcore/.bedrock_agentcore/
