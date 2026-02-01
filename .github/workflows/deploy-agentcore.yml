@@ -35,7 +35,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install AgentCore CLI
-        run: pip install bedrock-agentcore
+        run: pip install bedrock-agentcore-starter-toolkit
 
       - name: Deploy AgentCore Runtime
         working-directory: agentcore
