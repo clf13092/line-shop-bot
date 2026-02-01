@@ -59,11 +59,11 @@ resource "aws_iam_role_policy" "ssm_read" {
 }
 
 # -----------------------------------------------------------------------------
-# Bedrock呼び出しポリシー
+# AgentCore Runtime呼び出しポリシー
 # -----------------------------------------------------------------------------
 
-resource "aws_iam_role_policy" "bedrock_invoke" {
-  name = "${var.project_name}-bedrock-invoke-policy-${var.environment}"
+resource "aws_iam_role_policy" "agentcore_invoke" {
+  name = "${var.project_name}-agentcore-invoke-policy-${var.environment}"
   role = aws_iam_role.lambda_execution.id
 
   policy = jsonencode({
@@ -71,13 +71,9 @@ resource "aws_iam_role_policy" "bedrock_invoke" {
     Statement = [{
       Effect = "Allow"
       Action = [
-        "bedrock:InvokeModel",
-        "bedrock:InvokeModelWithResponseStream"
+        "bedrock-agentcore:InvokeAgentRuntime"
       ]
-      Resource = [
-        "arn:aws:bedrock:*::foundation-model/*",
-        "arn:aws:bedrock:*:${local.account_id}:inference-profile/*"
-      ]
+      Resource = "arn:aws:bedrock-agentcore:ap-northeast-1:${local.account_id}:runtime/*"
     }]
   })
 }

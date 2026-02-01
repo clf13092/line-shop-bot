@@ -1,0 +1,121 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Google Maps Places API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {"url": "https://maps.googleapis.com/maps/api"}
+  ],
+  "paths": {
+    "/place/textsearch/json": {
+      "get": {
+        "operationId": "searchPlaces",
+        "summary": "Search for places using text query",
+        "description": "Search for restaurants, cafes, and other places based on a text query like 'cafes in Shibuya'",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Search query (e.g., 'quiet cafe in Shibuya')"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "default": "ja"},
+            "description": "Language for results"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {"type": "string"},
+                          "formatted_address": {"type": "string"},
+                          "place_id": {"type": "string"},
+                          "rating": {"type": "number"},
+                          "price_level": {"type": "integer"},
+                          "types": {"type": "array", "items": {"type": "string"}}
+                        }
+                      }
+                    },
+                    "status": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/place/details/json": {
+      "get": {
+        "operationId": "getPlaceDetails",
+        "summary": "Get detailed information about a place",
+        "parameters": [
+          {
+            "name": "place_id",
+            "in": "query",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Place ID from search results"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "default": "ja"},
+            "description": "Language for results"
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "schema": {"type": "string", "default": "name,formatted_address,formatted_phone_number,opening_hours,rating,price_level,website,url"},
+            "description": "Fields to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "object",
+                      "properties": {
+                        "name": {"type": "string"},
+                        "formatted_address": {"type": "string"},
+                        "formatted_phone_number": {"type": "string"},
+                        "rating": {"type": "number"},
+                        "price_level": {"type": "integer"},
+                        "website": {"type": "string"},
+                        "url": {"type": "string"},
+                        "opening_hours": {"type": "object"}
+                      }
+                    },
+                    "status": {"type": "string"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
