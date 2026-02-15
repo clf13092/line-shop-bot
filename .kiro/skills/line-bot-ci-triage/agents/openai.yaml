@@ -1,0 +1,4 @@
+interface:
+  display_name: "LINE Bot CI Triage"
+  short_description: "Investigate GitHub Actions failures with fast logs"
+  default_prompt: "Use $line-bot-ci-triage to analyze failed GitHub Actions runs and suggest fixes."
