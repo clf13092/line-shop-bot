@@ -82,6 +82,25 @@ def send_line_push(to_id, message, access_token):
     print(f"[DEBUG] LINE PUSH status: {res.status_code}, body: {res.text}")
     return res
 
+def start_line_loading(chat_id, loading_seconds, access_token):
+    """1対1チャットでローディング表示を開始する"""
+    url = "https://api.line.me/v2/bot/chat/loading/start"
+    header = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {access_token}"
+    }
+    body = json.dumps({
+        "chatId": chat_id,
+        "loadingSeconds": loading_seconds
+    })
+    try:
+        res = requests.post(url=url, headers=header, data=body, timeout=10)
+        print(f"[DEBUG] LINE LOADING status: {res.status_code}, body: {res.text}")
+        return res
+    except Exception as e:
+        print(f"[WARN] LINE LOADING failed: {e}")
+        return None
+
 def _get_push_destination(ev) -> str | None:
     source = ev.get("source", {}) or {}
     source_type = source.get("type")
@@ -92,6 +111,18 @@ def _get_push_destination(ev) -> str | None:
     if source_type == "room":
         return source.get("roomId")
     return None
+
+def _allow_push_fallback() -> bool:
+    return os.environ.get("LINE_ALLOW_PUSH_FALLBACK", "false").lower() in ("1", "true", "yes", "on")
+
+def _get_loading_seconds() -> int:
+    raw = os.environ.get("LINE_LOADING_SECONDS", "20")
+    try:
+        n = int(raw)
+    except ValueError:
+        n = 20
+    n = max(5, min(60, n))
+    return (n // 5) * 5
 
 def _get_user_id(ev) -> str:
     """ユーザーIDを取得（Memory用）"""
@@ -156,9 +187,11 @@ def lambda_handler(event, context):
                     send_line_reply(reply_token, msg, CHANNEL_ACCESS_TOKEN)
                 continue
 
-            # 即レス
-            if reply_token:
-                send_line_reply(reply_token, "ただいまお店をお探ししております。少々お待ちください。", CHANNEL_ACCESS_TOKEN)
+            # 1対1チャットのみ、処理待ちをローディングで可視化
+            if source_type == "user":
+                chat_id = source.get("userId")
+                if chat_id:
+                    start_line_loading(chat_id, _get_loading_seconds(), CHANNEL_ACCESS_TOKEN)
 
             # AgentCore Runtime呼び出し
             try:
@@ -168,10 +201,19 @@ def lambda_handler(event, context):
                 traceback.print_exc()
                 ai_response = "申し訳ございません。現在検索サービスに接続できません。"
 
-            # 結果をpush
-            dest = _get_push_destination(ev)
-            if dest:
-                send_line_push(dest, ai_response, CHANNEL_ACCESS_TOKEN)
+            # 返信はreplyを優先（push課金を抑えるため）
+            if reply_token:
+                reply_res = send_line_reply(reply_token, ai_response, CHANNEL_ACCESS_TOKEN)
+                if reply_res.status_code >= 400 and _allow_push_fallback():
+                    print("[WARN] reply failed; trying push fallback")
+                    dest = _get_push_destination(ev)
+                    if dest:
+                        send_line_push(dest, ai_response, CHANNEL_ACCESS_TOKEN)
+            elif _allow_push_fallback():
+                print("[WARN] replyToken not found; trying push fallback")
+                dest = _get_push_destination(ev)
+                if dest:
+                    send_line_push(dest, ai_response, CHANNEL_ACCESS_TOKEN)
 
         except Exception as e:
             print(f"[ERROR] Event handling error: {e}")
