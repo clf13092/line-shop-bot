@@ -1,0 +1,4 @@
+interface:
+  display_name: "LINE Bot Lambda Deploy"
+  short_description: "Build, push, and deploy Lambda container safely"
+  default_prompt: "Use $line-bot-lambda-deploy to build, push, and deploy the Lambda image."

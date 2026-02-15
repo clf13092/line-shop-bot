@@ -1,0 +1,4 @@
+interface:
+  display_name: "LINE Bot AgentCore Deploy"
+  short_description: "Deploy AgentCore runtime and fix CI prerequisites"
+  default_prompt: "Use $line-bot-agentcore-deploy to deploy AgentCore runtime and troubleshoot CI failures."
